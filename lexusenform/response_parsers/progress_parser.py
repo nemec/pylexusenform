@@ -1,7 +1,7 @@
 import dateutil.parser as dp
 
-import models as m
-from timezone import TIMEZONE_MAPPING as tz
+import lexusenform.models as m
+from lexusenform.timezone import TIMEZONE_MAPPING as tz
 from .common import ResponseParser
 
 class ProgressParser(ResponseParser):

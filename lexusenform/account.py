@@ -6,9 +6,9 @@ from urllib.parse import urlsplit, parse_qs
 
 import requests
 
-from commands import Command
-import jwt
-from vehicle import Vehicle, VehicleEncoder, VehicleDecoder
+from .commands import Command
+import lexusenform.jwt
+from .vehicle import Vehicle, VehicleEncoder, VehicleDecoder
 
 
 def pretty_print(req):

@@ -3,8 +3,8 @@ from datetime import timedelta
 import json
 import time
 
-from commands import Commands as c
-from models import ProgressStatus
+from .commands import Commands as c
+from .models import ProgressStatus
 
 
 class Vehicle:
