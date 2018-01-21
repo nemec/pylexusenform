@@ -93,7 +93,7 @@ class Account:
 
     def get_id_token(self):
         cache = self._token_cache
-        if cache:
+        if cache and self.CACHE_ID_KEY in cache:
             tok = cache[self.CACHE_ID_KEY]
             if jwt.token_is_expired(tok):
                 toks = self._refresh_id_token()
