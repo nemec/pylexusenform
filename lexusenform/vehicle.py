@@ -5,6 +5,7 @@ import time
 
 from .commands import Commands as c
 from .models import ProgressStatus
+from lexusenform import AccountError
 
 
 class Vehicle:
@@ -30,9 +31,9 @@ class Vehicle:
         does not allow us to retrieve the full value
         '''
         if self.full_vin is None:
-            raise ValueError(
+            raise AccountError(
                 "Full vin is missing from this vehicle. Please add by calling "
-                "account.add_vin_mapping({vehicle_id}, {vin}")
+                "account.add_vin_mapping('{vehicle_id}', {{vin}})".format(vehicle_id=self.vehicle_id))
 
     def __process_until_finished(self,
                                  namespace: str,
@@ -52,12 +53,12 @@ class Vehicle:
             if (prog.command_status == ProgressStatus.FAILED or
                     prog.command_status == ProgressStatus.UNKNOWN):
                 if prog.progress is not None:
-                    raise ValueError(
+                    raise AccountError(
                         "Processing of command failed with value {}".format(prog.progress))
                 else:
-                    raise ValueError("Processing of command failed:\n{}".format(prog.response_text))
+                    raise AccountError("Processing of command failed:\n{}".format(prog.response_text))
             if time.time() > expires:
-                raise ValueError("Command timed out without completing")
+                raise AccountError("Command timed out without completing")
             if self._account.DEBUG:
                 if prog.progress is not None:
                     print("Progress: {}".format(prog.progress))

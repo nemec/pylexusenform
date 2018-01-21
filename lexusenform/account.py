@@ -8,6 +8,7 @@ import requests
 
 from .commands import Command
 import lexusenform.jwt as jwt
+from lexusenform import AccountError
 from .vehicle import Vehicle, VehicleEncoder, VehicleDecoder
 
 
@@ -60,7 +61,7 @@ class Account:
     REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
     SCOPE = "profile offline_access openid"
 
-    DEBUG = True
+    DEBUG = False
 
     def __init__(self, email: str, password: str, config_file: str = None):
         self.email = email
@@ -126,10 +127,10 @@ class Account:
             resp = tok.json()
             if "error" in resp:
                 if "error_description" in resp:
-                    raise ValueError("Refresh failure: {}".format(
+                    raise AccountError("Refresh failure: {}".format(
                         resp["error_description"]
                     ))
-                raise ValueError("Refresh failure: {}".format(
+                raise AccountError("Refresh failure: {}".format(
                     tok.content
                 ))
 
@@ -183,7 +184,7 @@ class Account:
 
         urn = code_req.headers["Location"]
         if 'error' in urn:
-            raise ValueError(urn)
+            raise AccountError(urn)
 
         query = parse_qs(urlsplit(urn).query)
         auth_code = query['code'][0]
@@ -203,7 +204,7 @@ class Account:
 
         toks = tok_req.json()
         if not self.CACHE_ID_KEY in toks:
-            raise ValueError("Refresh failure: {}".format(tok_req.text))
+            raise AccountError("Refresh failure: {}".format(tok_req.text))
 
         cache = self._token_cache
         cache[self.CACHE_ID_KEY] = toks[self.CACHE_ID_KEY]
@@ -236,7 +237,7 @@ class Account:
             print(pretty_print(req.request))
 
         if not req.status_code == 200:
-            raise ValueError("Command failed: {}".format(req.text))
+            raise AccountError("Command failed: {}".format(req.text))
 
         parser = command.response_parser(req.text, command.namespace)
         return parser.get_object()
@@ -247,7 +248,15 @@ class Account:
         cache = self._token_cache
 
         if not force_refresh and 'vehicles' in cache:
-            return cache['vehicles']
+            veh = cache['vehicles']
+            updated = False
+            for v in veh:
+                if v.full_vin is None:
+                    full_vin = cache.get("mappings", {}).get(v.vehicle_id, None)
+                    v.full_vin = full_vin
+            if updated:
+                self._save_cache()
+            return veh
 
         tok = self.get_id_token()
         exch = requests.post(self.EXCHANGE_URL,
@@ -259,7 +268,7 @@ class Account:
             })
 
         if not exch.status_code == 200:
-            raise ValueError("Invalid response from exchange: {}".format(exch.text))
+            raise AccountError("Invalid response from exchange: {}".format(exch.text))
 
         access_token = exch.json()['access_token']
         apikey = exch.headers['CV-APIKey']
@@ -279,11 +288,12 @@ class Account:
             })
 
         if not veh_req.status_code == 200:
-            raise ValueError("Invalid response from account: {}".format(veh_req.text))
+            raise AccountError("Invalid response from account: {}".format(veh_req.text))
 
         ret = []
         for item in veh_req.json():
-            full_vin = cache.get("mappings", None).get(item['id'], None)
+            full_vin = cache.get("mappings", {}).get(item['id'], None)
+            print(cache)
             veh = Vehicle(item['id'], item['vin'], full_vin,
                 item['makeName'], item['modelName'], item['modelYear'],
                 extra_data=item)
