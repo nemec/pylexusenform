@@ -7,7 +7,7 @@ from urllib.parse import urlsplit, parse_qs
 import requests
 
 from .commands import Command
-import lexusenform.jwt
+import lexusenform.jwt as jwt
 from .vehicle import Vehicle, VehicleEncoder, VehicleDecoder
 
 
