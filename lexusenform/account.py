@@ -2,13 +2,14 @@
 import base64
 import json
 import time
+from typing import List
 from urllib.parse import urlsplit, parse_qs
 
 import requests
 
 from .commands import Command
-import lexusenform.jwt as jwt
-from lexusenform import AccountError
+from . import jwt
+from . import AccountError
 from .vehicle import Vehicle, VehicleEncoder, VehicleDecoder
 
 
@@ -225,6 +226,13 @@ class Account:
         if 'mappings' not in cache:
             cache['mappings'] = {}
         cache['mappings'][vehicle_id] = vin
+
+        vehicles = cache.get('vehicles')
+        if vehicles:
+            for v in vehicles:
+                if v.vehicle_id == vehicle_id:
+                    v.full_vin = vin
+
         self._save_cache()
 
     def execute(self, command: Command):
@@ -242,7 +250,7 @@ class Account:
         parser = command.response_parser(req.text, command.namespace)
         return parser.get_object()
 
-    def vehicles(self, force_refresh: bool = False) -> Vehicle:
+    def vehicles(self, force_refresh: bool = False) -> List[Vehicle]:
         """Retrieve the list of vehicles from the account"""
 
         cache = self._token_cache

@@ -1,7 +1,7 @@
 from typing import Dict
 from xml.etree import ElementTree as et
 
-import lexusenform.response_parsers as rp
+from . import response_parsers as rp
 
 class Command:
     def __init__(self, body: str, path: str, response_parser: rp.ResponseParser,

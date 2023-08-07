@@ -3,12 +3,26 @@ from datetime import datetime
 from enum import Enum
 from typing import Tuple, List, Dict
 
+
+def strike_if_not(text, b):
+    if b:
+        return text
+    return text.replace('', '\u0336')[:-1]
+
 class Component:
     def __init__(self, name: str):
         self.name = name
         self.closed = None
         self.locked = None
         self.safe = True
+
+    def __repr__(self):
+        return '<{}: {}|{}|{}'.format(
+            self.name,
+            "closed" if self.closed else "open",
+            "locked" if self.locked else "unlocked",
+            "safe" if self.safe else "unsafe"
+        )
 
 class VehicleStatus:
     '''Details on a vehicle's status'''

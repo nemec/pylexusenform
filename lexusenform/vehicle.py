@@ -5,7 +5,7 @@ import time
 
 from .commands import Commands as c
 from .models import ProgressStatus
-from lexusenform import AccountError
+from . import AccountError
 
 
 class Vehicle:
@@ -44,6 +44,8 @@ class Vehicle:
         tok = self._account.get_id_token()
         prog_c = c.command_progress(tok, self.full_vin, namespace)
         expires = time.time() + timeout.total_seconds()
+
+        prog = None
         while True:
             prog = self._account.execute(prog_c)
             if (prog.command_status == ProgressStatus.COMPLETED and
@@ -67,6 +69,7 @@ class Vehicle:
                 if prog.vehicle_code is not None:
                     print("Vehicle code: {}".format(prog.vehicle_code))
             time.sleep(sleep.total_seconds())
+        return prog
 
 
     def status(self, force_refresh=False):
@@ -85,6 +88,27 @@ class Vehicle:
 
         cmd = c.vehicle_status(tok, self.full_vin)
         return self._account.execute(cmd)
+
+
+    def get_location(self, force_refresh=False):
+        '''
+        Retrieve the car's last known location. If force_refresh
+        is enabled, the status will be refreshed before checking
+        location.
+        '''
+        self.ensure_vin()
+
+        namespace = "RES" # DL
+        tok = self._account.get_id_token()
+
+        if force_refresh:
+            cmd = c.begin_refresh_vehicle_status(tok, self.full_vin)
+            self._account.execute(cmd)
+            return self.__process_until_finished(cmd.namespace).location
+            
+        prog_c = c.command_progress(tok, self.full_vin, namespace)
+        prog = self._account.execute(prog_c)
+        return prog.location
 
 
     def lock_doors(self):
